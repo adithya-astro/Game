@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Title changed as requested -->
+    <title>Guess My Word</title>
+    <style>
+        :root {
+            --key-bg: #d3d6da;
+            --key-color: #1a1a1b;
+            --absent-bg: #787c7e;
+            --present-bg: #c9b458;
+            --correct-bg: #6aaa64;
+            --tile-border-light: #d3d6da;
+            --tile-border-dark: #878a8c;
+            --tile-text: #ffffff;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-family);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #ffffff;
+            color: var(--key-color);
+            padding: 0 8px;
+            box-sizing: border-box;
+            overflow-y: auto; /* Allow scrolling on small height screens */
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Changed from center */
+            height: 100%;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        header {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--tile-border-light);
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        #settings-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            fill: var(--tile-border-dark);
+            transition: transform 0.3s ease;
+        }
+        #settings-icon:hover {
+            transform: rotate(60deg);
+        }
+
+
+        #grid-container {
+            display: grid;
+            grid-template-rows: repeat(5, 1fr); /* CHANGED: 5 rows for 5 guesses */
+            grid-gap: 5px;
+            width: 100%;
+            max-width: 350px; /* Back to 350px */
+            margin: 0 auto;
+            flex-shrink: 0;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* CHANGED: 5 columns for 5 letters */
+            grid-gap: 5px;
+        }
+
+        .tile {
+            width: 100%;
+            height: 100%;
+            /* CHANGED: Tiles are red at first */
+            border: 2px solid #e57373;
+            background-color: #fbebee; 
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(1.5rem, 5vw, 2.5rem); /* Responsive font size */
+            font-weight: bold;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            transition: transform 0.2s;
+            color: var(--key-color);
+            aspect-ratio: 1 / 1; /* Keep tiles square */
+        }
+
+        .tile.filled {
+            /* CHANGED: Override red when filled */
+            background-color: #ffffff; 
+            border-color: var(--tile-border-dark);
+            animation: popIn 0.1s;
+        }
+        
+        .tile.shake { animation: shake 0.5s; }
+        /* REMOVED: .tile.flip */
+        
+        /* ADDED: New reveal animation */
+        .tile.reveal {
+            animation: reveal 0.5s ease forwards;
+        }
+
+        @keyframes popIn {
+            /* Modified this animation to "drop in" slightly */
+            from { transform: translateY(-20px) scale(0.9); opacity: 0; }
+            60% { transform: translateY(5px) scale(1.05); opacity: 1; }
+            to { transform: translateY(0) scale(1); }
+        }
+        
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+        
+        /* REMOVED: @keyframes flip */
+
+        /* ADDED: New reveal animation keyframes */
+        @keyframes reveal {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #keyboard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0 8px 0;
+            width: 100%;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin: 4px 0;
+        }
+
+        .key {
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0;
+            margin: 0 2px; /* Adjusted margin */
+            height: 58px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            background-color: var(--key-bg);
+            color: var(--key-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            flex-basis: 0; /* Helps with flex distribution */
+            text-transform: uppercase;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.3);
+        }
+        
+        .key.letter { /* No longer needed */ }
+        .key.wide { flex-grow: 1.5; font-size: 0.8rem; }
+
+        /* Color classes for tiles and keys */
+        .correct, .key.correct {
+            background-color: var(--correct-bg) !important;
+            border-color: var(--correct-bg) !important;
+            color: var(--tile-text);
+        }
+
+        .present, .key.present {
+            background-color: var(--present-bg) !important;
+            border-color: var(--present-bg) !impo;
+            color: var(--tile-text);
+        }
+
+        .absent, .key.absent {
+            background-color: var(--absent-bg) !important;
+            border-color: var(--absent-bg) !important;
+            color: var(--tile-text);
+        }
+        
+        #message-box {
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* --- Modal Styles --- */
+        #modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 1;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        #modal-container.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        #modal {
+            background-color: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 320px; /* Slightly wider for the link */
+            text-align: center;
+        }
+
+        /* --- Modal Input View --- */
+        #modal-input-view {
+            display: block; /* Show by default */
+        }
+        
+        #modal-title {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+        }
+
+        #modal-input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid var(--tile-border-light);
+            border-radius: 4px;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        #modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        #modal-buttons button {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #modal-submit-btn {
+            background-color: var(--correct-bg);
+            color: white;
+        }
+
+        #modal-cancel-btn {
+            background-color: var(--key-bg);
+            color: var(--key-color);
+        }
+
+        /* --- Modal Share View (New) --- */
+        #modal-share-view {
+            display: none; /* Hide by default */
+        }
+
+        #modal-share-title {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            color: var(--key-color);
+        }
+
+        #modal-share-view p {
+            font-size: 0.9rem; 
+            color: #555; 
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        #share-link-input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid var(--tile-border-light);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            /* Allow text selection but not editing */
+            -webkit-user-select: all;
+            -moz-user-select: all;
+            -ms-user-select: all;
+            user-select: all;
+        }
+
+        #modal-share-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #modal-share-buttons button {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #copy-link-btn {
+            background-color: var(--correct-bg);
+            color: white;
+        }
+        
+        #close-share-btn {
+            background-color: var(--key-bg);
+            color: var(--key-color);
+        }
+
+    </style>
+</head>
+<body>
+    <div id="message-box"></div>
+    <div id="game-container">
+        <header>
+            <!-- Header changed as requested -->
+            <h1>GUESS MY WORD</h1>
+            <svg id="settings-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+        </header>
+        
+        <div id="grid-container"></div>
+        
+        <div id="keyboard"></div>
+    </div>
+
+    <!-- Modal for PIN, Word Input, and Sharing -->
+    <div id="modal-container" class="hidden">
+        <div id="modal">
+            
+            <!-- Input View -->
+            <div id="modal-input-view">
+                <h2 id="modal-title">Enter PIN</h2>
+                <input type="password" id="modal-input" autocomplete="off" />
+                <div id="modal-buttons">
+                    <button id="modal-cancel-btn">Cancel</button>
+                    <button id="modal-submit-btn">Submit</button>
+                </div>
+            </div>
+
+            <!-- Share View (New) -->
+            <div id="modal-share-view">
+                <h2 id="modal-share-title">Share Your Word!</h2>
+                <p>Share this link with your friends:</p>
+                <input type="text" id="share-link-input" readonly>
+                <div id="modal-share-buttons">
+                    <button id="copy-link-btn">Copy Link</button>
+                    <button id="close-share-btn">Done</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridContainer = document.getElementById('grid-container');
+            const keyboardContainer = document.getElementById('keyboard');
+            const messageBox = document.getElementById('message-box');
+            const settingsIcon = document.getElementById('settings-icon');
+
+            // --- Modal Elements ---
+            const modalContainer = document.getElementById('modal-container');
+            const modalTitle = document.getElementById('modal-title');
+            const modalInput = document.getElementById('modal-input');
+            const modalSubmitBtn = document.getElementById('modal-submit-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+            // --- New Modal View Elements ---
+            const modalInputView = document.getElementById('modal-input-view');
+            const modalShareView = document.getElementById('modal-share-view');
+            const shareLinkInput = document.getElementById('share-link-input');
+            const copyLinkBtn = document.getElementById('copy-link-btn');
+            const closeShareBtn = document.getElementById('close-share-btn');
+
+
+            // --- 庁 SECRET WORD LOGIC & GAME STATE 庁 ---
+            const storageKey = 'wordleGameTargetWord';
+            const secretPin = "1234";  // The secret PIN
+            
+            // --- New Function to get Target Word ---
+            function getTargetWord() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const wordFromUrl = urlParams.get('word');
+                
+                if (wordFromUrl) {
+                    try {
+                        // Decode from Base64
+                        const decodedWord = atob(wordFromUrl).toUpperCase();
+                        // Basic validation: 5 letters, A-Z only
+                        if (/^[A-Z]{5}$/.test(decodedWord)) {
+                            localStorage.setItem(storageKey, decodedWord); // Save it for consistency on reload
+                            return decodedWord;
+                        } else {
+                            console.warn("Invalid word in URL parameter.");
+                        }
+                    } catch (e) {
+                        console.error("Failed to decode word from URL:", e);
+                    }
+                }
+                
+                const wordFromStorage = localStorage.getItem(storageKey);
+                // Validate storage word
+                if (wordFromStorage && /^[A-Z]{5}$/.test(wordFromStorage)) {
+                    return wordFromStorage.toUpperCase();
+                }
+
+                return "AAMII"; // Default fallback (all caps)
+            }
+            
+            let targetWord = getTargetWord();
+            const guessRows = 5; // CHANGED: 5 guesses (rows)
+            let wordLength = targetWord.length; // 5 letters (columns)
+            let currentRow = 0;
+            let currentTile = 0;
+            let isGameOver = false;
+            let isModalOpen = false; // CHANGED: Added modal state
+            let grid = [];
+            let modalResolve = null;
+
+
+            // --- INITIALIZATION ---
+            
+            function buildGrid() {
+                gridContainer.innerHTML = '';
+                grid = []; // grid[row_index][col_index]
+                
+                // Create 5 rows (guesses)
+                for (let i = 0; i < guessRows; i++) {
+                    const rowElement = document.createElement('div');
+                    rowElement.classList.add('row');
+                    // Each row has 5 tiles (letters)
+                    rowElement.style.gridTemplateColumns = `repeat(${wordLength}, 1fr)`;
+                    
+                    grid[i] = []; // This is the row array
+                    
+                    for (let j = 0; j < wordLength; j++) {
+                        const tileElement = document.createElement('div');
+                        tileElement.classList.add('tile');
+                        rowElement.appendChild(tileElement);
+                        grid[i][j] = tileElement; // Store tile[row][col]
+                    }
+                    gridContainer.appendChild(rowElement);
+                }
+            }
+
+            function buildKeyboard() {
+                keyboardContainer.innerHTML = '';
+                const keys = [
+                    "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
+                    "A", "S", "D", "F", "G", "H", "J", "K", "L",
+                    "ENTER", "Z", "X", "C", "V", "B", "N", "M", "BKSP" // Changed icon to text
+                ];
+                const keyLayout = [keys.slice(0, 10), keys.slice(10, 19), keys.slice(19)];
+                keyLayout.forEach(row => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.classList.add('key-row');
+                    row.forEach(key => {
+                        const keyButton = document.createElement('button');
+                        keyButton.textContent = key;
+                        keyButton.classList.add('key');
+                        keyButton.setAttribute('data-key', key);
+                        if (key.length > 1) keyButton.classList.add('wide');
+                        keyButton.addEventListener('click', () => handleInteraction(key));
+                        rowDiv.appendChild(keyButton);
+                    });
+                    keyboardContainer.appendChild(rowDiv);
+                });
+            }
+            
+            function resetGame() {
+                // Get the latest target word (in case it was just set)
+                targetWord = getTargetWord();
+                wordLength = targetWord.length;
+                isGameOver = false;
+                currentRow = 0;
+                currentTile = 0;
+                buildGrid();
+                const allKeys = keyboardContainer.querySelectorAll('.key');
+                allKeys.forEach(key => {
+                    key.classList.remove('correct', 'present', 'absent');
+                    delete key.dataset.state;
+                });
+            }
+
+            // --- EVENT LISTENERS ---
+
+            // Promise-based modal handler
+            function showModal(config) {
+                isModalOpen = true; // CHANGED: Set modal state
+                // Reset views to default (input view)
+                modalInputView.style.display = 'block';
+                modalShareView.style.display = 'none';
+
+                modalTitle.textContent = config.title;
+                modalInput.value = '';
+                modalInput.type = config.inputType || 'text';
+                modalInput.placeholder = config.placeholder || '';
+                modalInput.maxLength = config.maxLength || 524288;
+                modalContainer.classList.remove('hidden');
+                modalInput.focus();
+
+                return new Promise((resolve) => {
+                    modalResolve = resolve;
+                });
+            }
+
+            function hideModal() {
+                isModalOpen = false; // CHANGED: Reset modal state
+                modalContainer.classList.add('hidden');
+                
+                // Reset modal to default view after transition
+                setTimeout(() => {
+                    modalInputView.style.display = 'block';
+                    modalShareView.style.display = 'none';
+                    modalInput.value = '';
+                }, 200); // Match transition duration
+
+                if (modalResolve) {
+                    modalResolve(null); // Resolve with null if cancelled/closed
+                    modalResolve = null;
+                }
+            }
+
+            modalSubmitBtn.addEventListener('click', () => {
+                if (modalResolve) {
+                    modalResolve(modalInput.value);
+                    modalResolve = null;
+                }
+                // Don't hide modal here, let the promise handler do it
+                // This allows the settings logic to change the modal content
+            });
+            modalCancelBtn.addEventListener('click', hideModal);
+            modalContainer.addEventListener('click', (e) => {
+                if (e.target === modalContainer) {
+                    hideModal();
+                }
+            });
+            modalInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    modalSubmitBtn.click();
+                }
+                if (e.key === 'Escape') {
+                    modalCancelBtn.click();
+                }
+            });
+
+            // --- New Listeners for Share Modal ---
+            copyLinkBtn.addEventListener('click', () => {
+                shareLinkInput.select();
+                shareLinkInput.setSelectionRange(0, 99999); // For mobile
+                
+                try {
+                    // Use execCommand for iframe compatibility
+                    document.execCommand('copy');
+                    showMessage("Link copied!", 1500);
+                } catch (err) {
+                    console.error('Failed to copy link: ', err);
+                    showMessage("Failed to copy. Please copy manually.", 2000);
+                }
+                
+                // Deselect
+                window.getSelection().removeAllRanges();
+            });
+
+            closeShareBtn.addEventListener('click', hideModal);
+
+
+            // --- Updated Settings Logic ---
+            settingsIcon.addEventListener('click', async () => {
+                const pinAttempt = await showModal({
+                    title: 'Enter Secret PIN',
+                    inputType: 'password',
+                    maxLength: 4
+                });
+
+                if (pinAttempt === secretPin) {
+                    // PIN is correct, now ask for word
+                    // Re-use the modal for the next step
+                    const newWordAttempt = await showModal({
+                        title: 'Enter a new 5-letter word',
+                        inputType: 'text',
+                        maxLength: 5
+                    });
+
+                    if (newWordAttempt && newWordAttempt.length === 5 && /^[A-Z]{5}$/i.test(newWordAttempt)) {
+                        const newWord = newWordAttempt.toUpperCase();
+                        localStorage.setItem(storageKey, newWord); // Save to localStorage
+                        targetWord = newWord;
+                        
+                        // --- NEW SHARING LOGIC ---
+                        // Encode word in Base64 to hide it in the URL
+                        const encodedWord = btoa(newWord);
+                        const shareUrl = `${window.location.origin}${window.location.pathname}?word=${encodedWord}`;
+                        
+                        shareLinkInput.value = shareUrl;
+                        
+                        // Switch to the share view
+                        modalInputView.style.display = 'none';
+                        modalShareView.style.display = 'block';
+
+                        showMessage("Word changed! Share the link.", 2000);
+                        setTimeout(resetGame, 500);
+
+                    } else if (newWordAttempt !== null) { // User submitted something invalid
+                        showMessage("Invalid word. Must be 5 letters.", 2000);
+                        hideModal();
+                    }
+                    // If newWordAttempt is null (user cancelled), hideModal() was already called
+                } else if (pinAttempt !== null) { // User submitted a wrong PIN
+                    showMessage("Incorrect PIN.", 2000);
+                    hideModal();
+                }
+                // If pinAttempt is null (user cancelled), hideModal() was already called
+            });
+
+            const handleInteraction = (key) => {
+                if (isGameOver || isModalOpen) return; // CHANGED: Added modal state check
+                const upperKey = key.toUpperCase();
+                
+                if (upperKey === 'ENTER') {
+                    submitGuess();
+                } else if (upperKey === 'BKSP' || upperKey === 'BACKSPACE') { // Handle physical and virtual key
+                    deleteLetter();
+                } else if (upperKey.length === 1 && upperKey >= 'A' && upperKey <= 'Z') {
+                    addLetter(upperKey);
+                }
+            };
+            
+            document.addEventListener('keydown', (e) => handleInteraction(e.key));
+
+            // --- GAME LOGIC ---
+
+            const showMessage = (message, duration = 1500) => {
+                messageBox.textContent = message;
+                messageBox.style.visibility = 'visible';
+                messageBox.style.opacity = '1';
+                messageBox.style.top = '12%';
+
+                // Clear any existing timer
+                if (messageBox.timerId) {
+                    clearTimeout(messageBox.timerId);
+                }
+
+                messageBox.timerId = setTimeout(() => {
+                    messageBox.style.opacity = '0';
+                    messageBox.style.visibility = 'hidden';
+                    messageBox.style.top = '10%';
+                }, duration);
+            };
+
+            const addLetter = (letter) => {
+                if (currentTile < wordLength && currentRow < guessRows) {
+                    const tile = grid[currentRow][currentTile];
+                    tile.textContent = letter;
+                    tile.classList.add('filled');
+                    currentTile++;
+                }
+            };
+            
+            const deleteLetter = () => {
+                if (currentTile > 0) {
+                    currentTile--;
+                    const tile = grid[currentRow][currentTile];
+                    tile.textContent = '';
+                    tile.classList.remove('filled');
+                }
+            };
+            
+            const submitGuess = () => {
+                if (currentTile !== wordLength) {
+                    shakeRow();
+                    showMessage("Not enough letters");
+                    return;
+                }
+                
+                const guess = grid[currentRow].map(tile => tile.textContent).join('').toUpperCase();
+                flipRow(guess);
+            };
+
+            const shakeRow = () => {
+                // This function now shakes the current *row* (guess)
+                const guessTiles = grid[currentRow];
+                guessTiles.forEach(tile => tile.classList.add('shake'));
+                setTimeout(() => {
+                    guessTiles.forEach(tile => tile.classList.remove('shake'));
+                }, 500);
+            };
+
+            const flipRow = (guess) => {
+                const guessTiles = grid[currentRow]; // This is the row of 5 tiles
+                let checkTargetWord = targetWord; // Both are uppercase
+                
+                // First pass for 'correct'
+                guessTiles.forEach((tile, index) => { // index is 0 to 4 (letter index)
+                    if (guess[index] === targetWord[index]) {
+                        tile.dataset.state = 'correct';
+                        // Mark letter as used
+                        checkTargetWord = checkTargetWord.substring(0, index) + ' ' + checkTargetWord.substring(index + 1);
+                    }
+                });
+
+                // Second pass for 'present' and 'absent'
+                guessTiles.forEach((tile, index) => {
+                    if (tile.dataset.state === 'correct') return; // Already processed
+                    
+                    if (checkTargetWord.includes(guess[index])) {
+                        tile.dataset.state = 'present';
+                        // Mark letter as used
+                        checkTargetWord = checkTargetWord.replace(guess[index], ' ');
+                    } else {
+                        tile.dataset.state = 'absent';
+                    }
+                });
+                
+                // Animate the flip and color update
+                // This will flip them one after the other, from left to right
+                guessTiles.forEach((tile, index) => {
+                    setTimeout(() => {
+                        tile.classList.add('reveal'); // CHANGED: 'flip' to 'reveal'
+                        tile.classList.add(tile.dataset.state);
+                        updateKeyColor(tile.textContent, tile.dataset.state);
+                    }, index * 250); // Speed up reveal stagger
+                });
+
+                setTimeout(() => checkWinLoss(guess), wordLength * 250 + 250); // Adjust timeout
+            };
+
+            const updateKeyColor = (letter, state) => {
+                const key = keyboardContainer.querySelector(`[data-key="${letter.toUpperCase()}"]`);
+                if (!key) return;
+
+                const currentStatus = key.dataset.state;
+                // Don't downgrade a key's color
+                if (currentStatus === 'correct') return;
+                if (currentStatus === 'present' && state === 'absent') return;
+                
+                // Remove old state class if any, before adding new one
+                key.classList.remove('correct', 'present', 'absent');
+                key.classList.add(state);
+                key.dataset.state = state;
+            };
+
+            const checkWinLoss = (guess) => {
+                if (guess === targetWord) {
+                    showMessage('You win! 🎉', 5000);
+                    isGameOver = true;
+                    return;
+                }
+
+                currentRow++;
+                currentTile = 0;
+                
+                if (currentRow >= guessRows) {
+                    showMessage(`Game Over! The word was ${targetWord}`, 5000);
+                    isGameOver = true;
+                }
+            };
+
+            // --- START GAME ---
+            buildGrid();
+            buildKeyboard();
+        });
+    </script>
+</body>
+</html>
+
