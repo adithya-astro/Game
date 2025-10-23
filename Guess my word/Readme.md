@@ -1,1 +1,18 @@
-Guess My WordA simple, fun word-guessing game inspired by Wordle, with a special twist: you can create your own word puzzles and share them with friends!This entire game is contained in a single HTML file, making it incredibly easy to host and share.This was built as a fun, non-commercial project to experiment with web technologies. Development and iteration were assisted by AI tools, including Google Gemini.How to PlayThe goal is to guess the secret 5-letter word in 5 tries.Type any 5-letter word and press ENTER.The tiles will change color to give you clues:🟩 Green: The letter is in the word and in the correct spot.🟨 Yellow: The letter is in the word but in the wrong spot.⬛ Grey: The letter is not in the word at all.Use the clues to make your next guess.You win if you guess the word within 5 tries!✨ Create & Share Your Own PuzzleThis is the game's special feature!Click the Settings icon (⚙️) in the header.Enter the secret PIN (1234).Type in any 5-letter word you want your friends to guess.The game will generate a special shareable link.Copy this link and send it to your friends. When they open it, the secret word will be the one you set!
+Guess My Word
+
+A simple, fun word-guessing game inspired by Wordle, with a special twist: you can create your own word puzzles and share them with friends!This entire game is contained in a single HTML file, making it incredibly easy to host and share.This was built as a fun, non-commercial project to experiment with web technologies. Development and iteration were assisted by AI tools, including Google Gemini.
+
+
+How to Play
+
+The goal is to guess the secret 5-letter word in 5 tries.Type any 5-letter word and press ENTER.The tiles will change color to give you clues:
+
+🟩 Green: The letter is in the word and in the correct spot.
+
+🟨 Yellow: The letter is in the word but in the wrong spot.
+
+⬛ Grey: The letter is not in the word at all.
+
+Use the clues to make your next guess.You win if you guess the word within 5 tries!✨ 
+
+Create & Share Your Own PuzzleThis is the game's special feature!Click the Settings icon (⚙️) in the header.Enter the secret PIN (1234).Type in any 5-letter word you want your friends to guess.The game will generate a special shareable link.Copy this link and send it to your friends. When they open it, the secret word will be the one you set!
