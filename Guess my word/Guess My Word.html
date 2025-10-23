@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Title changed as requested -->
     <title>Guess My Word</title>
     <style>
         :root {
@@ -15,6 +14,8 @@
             --tile-border-light: #d3d6da;
             --tile-border-dark: #878a8c;
             --tile-text: #ffffff;
+            --tile-red-bg: #f2b4b4; /* Red for empty tiles */
+            --tile-red-border: #e09898;
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -51,30 +52,48 @@
         
         header {
             width: 100%;
-            display: flex;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr; /* Left, Center, Right */
             align-items: center;
-            gap: 12px;
             padding: 12px 0;
             border-bottom: 1px solid var(--tile-border-light);
             margin-bottom: 16px;
-            position: relative;
+        }
+
+        #header-icons-left {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 12px; /* Space between icons */
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: clamp(1.5rem, 5vw, 2.2rem); /* Responsive font size */
             font-weight: 700;
             margin: 0;
             letter-spacing: 0.1em;
             text-transform: uppercase;
+            text-align: center; /* Center the title */
+            grid-column: 2; /* Place title in the center column */
+        }
+        
+        #header-icons-right {
+            display: flex;
+            justify-content: flex-end; /* Align to the right */
+            align-items: center;
+            gap: 12px;
+            grid-column: 3; /* Place settings in the right column */
         }
 
-        #settings-icon {
+        .header-icon {
             width: 24px;
             height: 24px;
             cursor: pointer;
             fill: var(--tile-border-dark);
             transition: transform 0.3s ease;
+        }
+        .header-icon:hover {
+            transform: scale(1.1) rotate(15deg);
         }
         #settings-icon:hover {
             transform: rotate(60deg);
@@ -83,26 +102,25 @@
 
         #grid-container {
             display: grid;
-            grid-template-rows: repeat(5, 1fr); /* CHANGED: 5 rows for 5 guesses */
+            grid-template-rows: repeat(5, 1fr); /* 5 rows */
             grid-gap: 5px;
             width: 100%;
-            max-width: 350px; /* Back to 350px */
+            max-width: 300px; /* Max width for 5 tiles */
             margin: 0 auto;
             flex-shrink: 0;
         }
 
         .row {
             display: grid;
-            grid-template-columns: repeat(5, 1fr); /* CHANGED: 5 columns for 5 letters */
+            grid-template-columns: repeat(5, 1fr); /* 5 letters */
             grid-gap: 5px;
         }
 
         .tile {
             width: 100%;
             height: 100%;
-            /* CHANGED: Tiles are red at first */
-            border: 2px solid #e57373;
-            background-color: #fbebee; 
+            border: 2px solid var(--tile-red-border); /* Red border first */
+            background-color: var(--tile-red-bg); /* Red background first */
             display: inline-flex;
             justify-content: center;
             align-items: center;
@@ -110,31 +128,25 @@
             font-weight: bold;
             text-transform: uppercase;
             box-sizing: border-box;
-            transition: transform 0.2s;
+            transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
             color: var(--key-color);
             aspect-ratio: 1 / 1; /* Keep tiles square */
         }
 
         .tile.filled {
-            /* CHANGED: Override red when filled */
-            background-color: #ffffff; 
             border-color: var(--tile-border-dark);
+            background-color: #fff; /* White when typed */
             animation: popIn 0.1s;
         }
         
         .tile.shake { animation: shake 0.5s; }
-        /* REMOVED: .tile.flip */
-        
-        /* ADDED: New reveal animation */
-        .tile.reveal {
-            animation: reveal 0.5s ease forwards;
-        }
+        /* Replaced flip with a reveal/flash effect */
+        .tile.reveal { animation: reveal 0.6s ease forwards; }
 
         @keyframes popIn {
-            /* Modified this animation to "drop in" slightly */
-            from { transform: translateY(-20px) scale(0.9); opacity: 0; }
-            60% { transform: translateY(5px) scale(1.05); opacity: 1; }
-            to { transform: translateY(0) scale(1); }
+            from { transform: scale(0.8); opacity: 0; }
+            40% { transform: scale(1.1); opacity: 1; }
+            to { transform: scale(1); }
         }
         
         @keyframes shake {
@@ -144,9 +156,6 @@
             40%, 60% { transform: translateX(4px); }
         }
         
-        /* REMOVED: @keyframes flip */
-
-        /* ADDED: New reveal animation keyframes */
         @keyframes reveal {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -189,7 +198,6 @@
             -webkit-tap-highlight-color: rgba(0,0,0,0.3);
         }
         
-        .key.letter { /* No longer needed */ }
         .key.wide { flex-grow: 1.5; font-size: 0.8rem; }
 
         /* Color classes for tiles and keys */
@@ -201,7 +209,7 @@
 
         .present, .key.present {
             background-color: var(--present-bg) !important;
-            border-color: var(--present-bg) !impo;
+            border-color: var(--present-bg) !important;
             color: var(--tile-text);
         }
 
@@ -216,7 +224,7 @@
             top: 10%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.85);
             color: white;
             padding: 12px 24px;
             border-radius: 8px;
@@ -256,21 +264,58 @@
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             width: 90%;
-            max-width: 320px; /* Slightly wider for the link */
-            text-align: center;
+            max-width: 400px; /* Wider for more content */
+            text-align: left;
+            position: relative;
         }
 
-        /* --- Modal Input View --- */
-        #modal-input-view {
-            display: block; /* Show by default */
+        .modal-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--key-bg);
+            cursor: pointer;
+            line-height: 1;
         }
-        
+        .modal-close-btn:hover {
+            color: var(--absent-bg);
+        }
+
         #modal-title {
             margin-top: 0;
             margin-bottom: 16px;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        /* Scrollable content area */
+        .modal-content {
+            max-height: 60vh; /* Limit height */
+            overflow-y: auto; /* Add scrollbar if needed */
+            padding-right: 10px; /* Space for scrollbar */
         }
 
+        .modal-content h3 {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--tile-border-light);
+            padding-bottom: 5px;
+        }
+        
+        .modal-content p, .modal-content li {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--absent-bg);
+        }
+        
+        .modal-content strong {
+            color: var(--key-color);
+        }
+        
+        /* For inputs/buttons inside modals */
         #modal-input {
             width: 100%;
             padding: 10px;
@@ -286,8 +331,9 @@
 
         #modal-buttons {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             gap: 10px;
+            margin-top: 20px;
         }
 
         #modal-buttons button {
@@ -300,87 +346,66 @@
             cursor: pointer;
         }
 
-        #modal-submit-btn {
+        #modal-submit-btn, #share-btn, #clipboard-btn {
             background-color: var(--correct-bg);
             color: white;
         }
-
         #modal-cancel-btn {
             background-color: var(--key-bg);
             color: var(--key-color);
         }
-
-        /* --- Modal Share View (New) --- */
-        #modal-share-view {
-            display: none; /* Hide by default */
-        }
-
-        #modal-share-title {
-            margin-top: 0;
-            margin-bottom: 12px;
+        
+        /* Specific for Win Modal */
+        #win-grid-share {
+            font-family: monospace;
             font-size: 1.2rem;
-            color: var(--key-color);
-        }
-
-        #modal-share-view p {
-            font-size: 0.9rem; 
-            color: #555; 
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        #share-link-input {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid var(--tile-border-light);
-            border-radius: 4px;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-            background-color: #f4f4f4;
-            color: #333;
+            line-height: 1.2;
             text-align: center;
-            /* Allow text selection but not editing */
-            -webkit-user-select: all;
-            -moz-user-select: all;
-            -ms-user-select: all;
-            user-select: all;
-        }
-
-        #modal-share-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        #modal-share-buttons button {
-            flex-grow: 1;
+            white-space: pre-wrap;
+            margin: 15px 0;
             padding: 10px;
-            border: none;
+            background-color: #f9f9f9;
             border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        #copy-link-btn {
-            background-color: var(--correct-bg);
-            color: white;
         }
         
-        #close-share-btn {
-            background-color: var(--key-bg);
-            color: var(--key-color);
+        /* Style for example tiles in Help */
+        .example-tile-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
         }
-
+        .example-tile {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
     <div id="message-box"></div>
+    
     <div id="game-container">
         <header>
-            <!-- Header changed as requested -->
+            <div id="header-icons-left">
+                <!-- Info (About) Icon -->
+                <svg id="info-icon" class="header-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+
+                <!-- Help (?) Icon -->
+                <svg id="help-icon" class="header-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+            </div>
+            
             <h1>GUESS MY WORD</h1>
-            <svg id="settings-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+            
+            <div id="header-icons-right">
+                <!-- Settings (Gear) Icon -->
+                <svg id="settings-icon" class="header-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+            </div>
         </header>
         
         <div id="grid-container"></div>
@@ -388,121 +413,139 @@
         <div id="keyboard"></div>
     </div>
 
-    <!-- Modal for PIN, Word Input, and Sharing -->
+    <!-- Modal Container (used for all pop-ups) -->
     <div id="modal-container" class="hidden">
         <div id="modal">
+            <span class="modal-close-btn">&times;</span>
+            <h2 id="modal-title">Modal Title</h2>
             
-            <!-- Input View -->
-            <div id="modal-input-view">
-                <h2 id="modal-title">Enter PIN</h2>
-                <input type="password" id="modal-input" autocomplete="off" />
-                <div id="modal-buttons">
-                    <button id="modal-cancel-btn">Cancel</button>
-                    <button id="modal-submit-btn">Submit</button>
-                </div>
+            <!-- Content area for inputs, text, etc. -->
+            <div id="modal-content-area" class="modal-content">
+                <!-- Content injected by JS -->
             </div>
-
-            <!-- Share View (New) -->
-            <div id="modal-share-view">
-                <h2 id="modal-share-title">Share Your Word!</h2>
-                <p>Share this link with your friends:</p>
-                <input type="text" id="share-link-input" readonly>
-                <div id="modal-share-buttons">
-                    <button id="copy-link-btn">Copy Link</button>
-                    <button id="close-share-btn">Done</button>
-                </div>
+            
+            <!-- Button area (optional) -->
+            <div id="modal-buttons">
+                <!-- Buttons injected by JS -->
             </div>
-
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
             const gridContainer = document.getElementById('grid-container');
             const keyboardContainer = document.getElementById('keyboard');
             const messageBox = document.getElementById('message-box');
-            const settingsIcon = document.getElementById('settings-icon');
-
-            // --- Modal Elements ---
-            const modalContainer = document.getElementById('modal-container');
-            const modalTitle = document.getElementById('modal-title');
-            const modalInput = document.getElementById('modal-input');
-            const modalSubmitBtn = document.getElementById('modal-submit-btn');
-            const modalCancelBtn = document.getElementById('modal-cancel-btn');
-
-            // --- New Modal View Elements ---
-            const modalInputView = document.getElementById('modal-input-view');
-            const modalShareView = document.getElementById('modal-share-view');
-            const shareLinkInput = document.getElementById('share-link-input');
-            const copyLinkBtn = document.getElementById('copy-link-btn');
-            const closeShareBtn = document.getElementById('close-share-btn');
-
-
-            // --- 庁 SECRET WORD LOGIC & GAME STATE 庁 ---
-            const storageKey = 'wordleGameTargetWord';
-            const secretPin = "1234";  // The secret PIN
             
-            // --- New Function to get Target Word ---
-            function getTargetWord() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const wordFromUrl = urlParams.get('word');
+            // Header Icons
+            const settingsIcon = document.getElementById('settings-icon');
+            const helpIcon = document.getElementById('help-icon');
+            const infoIcon = document.getElementById('info-icon');
+
+            // Modal Elements
+            const modalContainer = document.getElementById('modal-container');
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContentArea = document.getElementById('modal-content-area');
+            const modalButtons = document.getElementById('modal-buttons');
+            const modalCloseBtn = document.querySelector('.modal-close-btn');
+
+            // --- Game State ---
+            const defaultWord = "HELLO";
+            const secretPin = "1234";
+            const guessRows = 5; // 5 guesses
+            const wordLength = 5; // 5 letters
+            const saveKey = 'guessMyWord_gameState';
+            
+            let targetWord = defaultWord;
+            let currentRow = 0;
+            let currentTile = 0;
+            let isGameOver = false;
+            let grid = []; // 2D array for tile elements
+            let keyboardState = {};
+            let modalState = {
+                isOpen: false,
+                resolve: null
+            };
+
+            // --- 1. INITIALIZATION ---
+
+            function initGame() {
+                // Determine the target word
+                targetWord = getWordFromURL() || loadGameState()?.targetWord || defaultWord;
+                targetWord = targetWord.toUpperCase();
+
+                // Clear any old saved game if the word is different
+                const savedState = loadGameState();
+                if (savedState && savedState.targetWord !== targetWord) {
+                    localStorage.removeItem(saveKey);
+                    // Reset all state variables
+                    currentRow = 0;
+                    currentTile = 0;
+                    isGameOver = false;
+                    keyboardState = {};
+                }
                 
-                if (wordFromUrl) {
+                // Reset modal state
+                modalState.isOpen = false;
+                
+                buildGrid();
+                buildKeyboard();
+                
+                // Try to load the game
+                try {
+                    if (savedState && savedState.targetWord === targetWord) {
+                        restoreGameState(savedState);
+                    }
+                } catch (error) {
+                    console.error("Failed to restore game state:", error);
+                    localStorage.removeItem(saveKey);
+                    // Reset grid/keyboard if restore fails
+                    buildGrid();
+                    buildKeyboard();
+                }
+
+                // Check if the loaded game was already over
+                if (isGameOver) {
+                    if (savedState.guesses[currentRow - 1] === targetWord) {
+                        // Won
+                        showWinModal(savedState.guesses);
+                    } else {
+                        // Lost
+                        showMessage(`Game Over! The word was ${targetWord}`, 5000);
+                    }
+                }
+            }
+            
+            function getWordFromURL() {
+                const params = new URLSearchParams(window.location.search);
+                const encodedWord = params.get('word');
+                if (encodedWord) {
                     try {
-                        // Decode from Base64
-                        const decodedWord = atob(wordFromUrl).toUpperCase();
-                        // Basic validation: 5 letters, A-Z only
-                        if (/^[A-Z]{5}$/.test(decodedWord)) {
-                            localStorage.setItem(storageKey, decodedWord); // Save it for consistency on reload
-                            return decodedWord;
-                        } else {
-                            console.warn("Invalid word in URL parameter.");
+                        const decodedWord = atob(encodedWord);
+                        if (decodedWord.length === wordLength) {
+                            return decodedWord.toUpperCase();
                         }
                     } catch (e) {
                         console.error("Failed to decode word from URL:", e);
                     }
                 }
-                
-                const wordFromStorage = localStorage.getItem(storageKey);
-                // Validate storage word
-                if (wordFromStorage && /^[A-Z]{5}$/.test(wordFromStorage)) {
-                    return wordFromStorage.toUpperCase();
-                }
-
-                return "AAMII"; // Default fallback (all caps)
+                return null;
             }
-            
-            let targetWord = getTargetWord();
-            const guessRows = 5; // CHANGED: 5 guesses (rows)
-            let wordLength = targetWord.length; // 5 letters (columns)
-            let currentRow = 0;
-            let currentTile = 0;
-            let isGameOver = false;
-            let isModalOpen = false; // CHANGED: Added modal state
-            let grid = [];
-            let modalResolve = null;
 
-
-            // --- INITIALIZATION ---
-            
             function buildGrid() {
                 gridContainer.innerHTML = '';
-                grid = []; // grid[row_index][col_index]
-                
-                // Create 5 rows (guesses)
+                grid = [];
                 for (let i = 0; i < guessRows; i++) {
                     const rowElement = document.createElement('div');
                     rowElement.classList.add('row');
-                    // Each row has 5 tiles (letters)
-                    rowElement.style.gridTemplateColumns = `repeat(${wordLength}, 1fr)`;
-                    
-                    grid[i] = []; // This is the row array
-                    
+                    grid[i] = [];
                     for (let j = 0; j < wordLength; j++) {
                         const tileElement = document.createElement('div');
                         tileElement.classList.add('tile');
                         rowElement.appendChild(tileElement);
-                        grid[i][j] = tileElement; // Store tile[row][col]
+                        grid[i][j] = tileElement;
                     }
                     gridContainer.appendChild(rowElement);
                 }
@@ -513,7 +556,7 @@
                 const keys = [
                     "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
                     "A", "S", "D", "F", "G", "H", "J", "K", "L",
-                    "ENTER", "Z", "X", "C", "V", "B", "N", "M", "BKSP" // Changed icon to text
+                    "ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"
                 ];
                 const keyLayout = [keys.slice(0, 10), keys.slice(10, 19), keys.slice(19)];
                 keyLayout.forEach(row => {
@@ -521,7 +564,7 @@
                     rowDiv.classList.add('key-row');
                     row.forEach(key => {
                         const keyButton = document.createElement('button');
-                        keyButton.textContent = key;
+                        keyButton.textContent = key === "BACKSPACE" ? "⌫" : key;
                         keyButton.classList.add('key');
                         keyButton.setAttribute('data-key', key);
                         if (key.length > 1) keyButton.classList.add('wide');
@@ -531,169 +574,74 @@
                     keyboardContainer.appendChild(rowDiv);
                 });
             }
+
+            // --- 2. GAME STATE MANAGEMENT (SAVE/LOAD) ---
             
-            function resetGame() {
-                // Get the latest target word (in case it was just set)
-                targetWord = getTargetWord();
-                wordLength = targetWord.length;
-                isGameOver = false;
-                currentRow = 0;
-                currentTile = 0;
-                buildGrid();
-                const allKeys = keyboardContainer.querySelectorAll('.key');
-                allKeys.forEach(key => {
-                    key.classList.remove('correct', 'present', 'absent');
-                    delete key.dataset.state;
-                });
+            function saveGameState(guesses) {
+                const state = {
+                    targetWord: targetWord,
+                    guesses: guesses,
+                    currentRow: currentRow,
+                    isGameOver: isGameOver,
+                    keyboardState: keyboardState
+                };
+                localStorage.setItem(saveKey, JSON.stringify(state));
             }
 
-            // --- EVENT LISTENERS ---
-
-            // Promise-based modal handler
-            function showModal(config) {
-                isModalOpen = true; // CHANGED: Set modal state
-                // Reset views to default (input view)
-                modalInputView.style.display = 'block';
-                modalShareView.style.display = 'none';
-
-                modalTitle.textContent = config.title;
-                modalInput.value = '';
-                modalInput.type = config.inputType || 'text';
-                modalInput.placeholder = config.placeholder || '';
-                modalInput.maxLength = config.maxLength || 524288;
-                modalContainer.classList.remove('hidden');
-                modalInput.focus();
-
-                return new Promise((resolve) => {
-                    modalResolve = resolve;
-                });
-            }
-
-            function hideModal() {
-                isModalOpen = false; // CHANGED: Reset modal state
-                modalContainer.classList.add('hidden');
-                
-                // Reset modal to default view after transition
-                setTimeout(() => {
-                    modalInputView.style.display = 'block';
-                    modalShareView.style.display = 'none';
-                    modalInput.value = '';
-                }, 200); // Match transition duration
-
-                if (modalResolve) {
-                    modalResolve(null); // Resolve with null if cancelled/closed
-                    modalResolve = null;
+            function loadGameState() {
+                const stateString = localStorage.getItem(saveKey);
+                if (stateString) {
+                    return JSON.parse(stateString);
                 }
+                return null;
             }
 
-            modalSubmitBtn.addEventListener('click', () => {
-                if (modalResolve) {
-                    modalResolve(modalInput.value);
-                    modalResolve = null;
+            function restoreGameState(state) {
+                // Restore grid
+                state.guesses.forEach((guess, rowIndex) => {
+                    const guessLetters = guess.split('');
+                    const [states] = checkGuess(guess, targetWord); // Get tile states
+                    
+                    guessLetters.forEach((letter, tileIndex) => {
+                        const tile = grid[rowIndex][tileIndex];
+                        tile.textContent = letter;
+                        tile.classList.add('filled');
+                        tile.classList.add(states[tileIndex]); // Add correct/present/absent
+                    });
+                });
+
+                // Restore keyboard
+                keyboardState = state.keyboardState || {};
+                for (const [letter, state] of Object.entries(keyboardState)) {
+                    updateKeyColor(letter, state, true); // Force update
                 }
-                // Don't hide modal here, let the promise handler do it
-                // This allows the settings logic to change the modal content
-            });
-            modalCancelBtn.addEventListener('click', hideModal);
+
+                // Restore game progress
+                currentRow = state.currentRow;
+                isGameOver = state.isGameOver;
+            }
+
+            // --- 3. EVENT LISTENERS ---
+
+            // Physical Keyboard
+            document.addEventListener('keydown', (e) => handleInteraction(e.key));
+            
+            // On-screen Keyboard (already added in buildKeyboard)
+
+            // Modal Listeners
+            modalCloseBtn.addEventListener('click', hideModal);
             modalContainer.addEventListener('click', (e) => {
                 if (e.target === modalContainer) {
                     hideModal();
                 }
             });
-            modalInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    modalSubmitBtn.click();
-                }
-                if (e.key === 'Escape') {
-                    modalCancelBtn.click();
-                }
-            });
 
-            // --- New Listeners for Share Modal ---
-            copyLinkBtn.addEventListener('click', () => {
-                shareLinkInput.select();
-                shareLinkInput.setSelectionRange(0, 99999); // For mobile
-                
-                try {
-                    // Use execCommand for iframe compatibility
-                    document.execCommand('copy');
-                    showMessage("Link copied!", 1500);
-                } catch (err) {
-                    console.error('Failed to copy link: ', err);
-                    showMessage("Failed to copy. Please copy manually.", 2000);
-                }
-                
-                // Deselect
-                window.getSelection().removeAllRanges();
-            });
+            // Header Icon Listeners
+            helpIcon.addEventListener('click', showHelpModal);
+            infoIcon.addEventListener('click', showAboutModal);
+            settingsIcon.addEventListener('click', showSettingsModal);
 
-            closeShareBtn.addEventListener('click', hideModal);
-
-
-            // --- Updated Settings Logic ---
-            settingsIcon.addEventListener('click', async () => {
-                const pinAttempt = await showModal({
-                    title: 'Enter Secret PIN',
-                    inputType: 'password',
-                    maxLength: 4
-                });
-
-                if (pinAttempt === secretPin) {
-                    // PIN is correct, now ask for word
-                    // Re-use the modal for the next step
-                    const newWordAttempt = await showModal({
-                        title: 'Enter a new 5-letter word',
-                        inputType: 'text',
-                        maxLength: 5
-                    });
-
-                    if (newWordAttempt && newWordAttempt.length === 5 && /^[A-Z]{5}$/i.test(newWordAttempt)) {
-                        const newWord = newWordAttempt.toUpperCase();
-                        localStorage.setItem(storageKey, newWord); // Save to localStorage
-                        targetWord = newWord;
-                        
-                        // --- NEW SHARING LOGIC ---
-                        // Encode word in Base64 to hide it in the URL
-                        const encodedWord = btoa(newWord);
-                        const shareUrl = `${window.location.origin}${window.location.pathname}?word=${encodedWord}`;
-                        
-                        shareLinkInput.value = shareUrl;
-                        
-                        // Switch to the share view
-                        modalInputView.style.display = 'none';
-                        modalShareView.style.display = 'block';
-
-                        showMessage("Word changed! Share the link.", 2000);
-                        setTimeout(resetGame, 500);
-
-                    } else if (newWordAttempt !== null) { // User submitted something invalid
-                        showMessage("Invalid word. Must be 5 letters.", 2000);
-                        hideModal();
-                    }
-                    // If newWordAttempt is null (user cancelled), hideModal() was already called
-                } else if (pinAttempt !== null) { // User submitted a wrong PIN
-                    showMessage("Incorrect PIN.", 2000);
-                    hideModal();
-                }
-                // If pinAttempt is null (user cancelled), hideModal() was already called
-            });
-
-            const handleInteraction = (key) => {
-                if (isGameOver || isModalOpen) return; // CHANGED: Added modal state check
-                const upperKey = key.toUpperCase();
-                
-                if (upperKey === 'ENTER') {
-                    submitGuess();
-                } else if (upperKey === 'BKSP' || upperKey === 'BACKSPACE') { // Handle physical and virtual key
-                    deleteLetter();
-                } else if (upperKey.length === 1 && upperKey >= 'A' && upperKey <= 'Z') {
-                    addLetter(upperKey);
-                }
-            };
-            
-            document.addEventListener('keydown', (e) => handleInteraction(e.key));
-
-            // --- GAME LOGIC ---
+            // --- 4. MODAL/MESSAGE UI ---
 
             const showMessage = (message, duration = 1500) => {
                 messageBox.textContent = message;
@@ -701,17 +649,204 @@
                 messageBox.style.opacity = '1';
                 messageBox.style.top = '12%';
 
-                // Clear any existing timer
-                if (messageBox.timerId) {
-                    clearTimeout(messageBox.timerId);
-                }
-
-                messageBox.timerId = setTimeout(() => {
+                setTimeout(() => {
                     messageBox.style.opacity = '0';
                     messageBox.style.visibility = 'hidden';
                     messageBox.style.top = '10%';
                 }, duration);
             };
+
+            function showModal(title, contentHtml, buttonsHtml = '') {
+                modalTitle.textContent = title;
+                modalContentArea.innerHTML = contentHtml;
+                modalButtons.innerHTML = buttonsHtml;
+                modalContainer.classList.remove('hidden');
+                modalState.isOpen = true;
+
+                // Add listeners to any new buttons
+                modalButtons.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (modalState.resolve) {
+                            modalState.resolve(e.target.dataset.value || null);
+                            modalState.resolve = null;
+                        }
+                    });
+                });
+            }
+
+            function hideModal() {
+                modalContainer.classList.add('hidden');
+                modalState.isOpen = false;
+                if (modalState.resolve) {
+                    modalState.resolve(null); // Resolve with null if cancelled
+                    modalState.resolve = null;
+                }
+            }
+
+            function showModalWithInput(config) {
+                const content = `
+                    <input type="${config.inputType || 'text'}" id="modal-input" 
+                           autocomplete="off" 
+                           maxlength="${config.maxLength || 524288}" 
+                           placeholder="${config.placeholder || ''}"
+                    />
+                `;
+                const buttons = `
+                    <button id="modal-cancel-btn" data-value="cancel">Cancel</button>
+                    <button id="modal-submit-btn" data-value="submit">Submit</button>
+                `;
+                showModal(config.title, content, buttons);
+                
+                const input = document.getElementById('modal-input');
+                input.focus();
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('modal-submit-btn').click();
+                    } else if (e.key === 'Escape') {
+                        document.getElementById('modal-cancel-btn').click();
+                    }
+                });
+
+                return new Promise((resolve) => {
+                    modalState.resolve = (value) => {
+                        if (value === 'submit') {
+                            resolve(input.value);
+                        } else {
+                            resolve(null); // Cancelled
+                        }
+                        hideModal();
+                    };
+                });
+            }
+            
+            function showHelpModal() {
+                const content = `
+                    <h3>How to Play</h3>
+                    <p>Guess the <strong>5-letter word</strong> in 5 tries.</p>
+                    <ul>
+                        <li>Each guess must be a valid 5-letter word. Hit ENTER to submit.</li>
+                        <li>After each guess, the color of the tiles will change to show how close your guess was to the word.</li>
+                    </ul>
+                    <div class="example-tile-row">
+                        <div class="example-tile correct" style="color:white; border-color:var(--correct-bg);">W</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">E</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">A</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">R</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">Y</div>
+                    </div>
+                    <p><strong>W</strong> is in the word and in the correct spot.</p>
+                    
+                    <div class="example-tile-row">
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">P</div>
+                        <div class="example-tile present" style="color:white; border-color:var(--present-bg);">I</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">L</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">L</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">S</div>
+                    </div>
+                    <p><strong>I</strong> is in the word but in the wrong spot.</p>
+                    
+                    <div class="example-tile-row">
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">V</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">A</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">G</div>
+                        <div class="example-tile absent" style="color:white; border-color:var(--absent-bg);">U</div>
+                        <div class="example-tile" style="border-color:var(--tile-border-light);">E</div>
+                    </div>
+                    <p><strong>U</strong> is not in the word in any spot.</p>
+
+                    <h3>How to Set a Word</h3>
+                    <ol>
+                        <li>Click the <strong>Settings icon (⚙️)</strong> in the header.</li>
+                        <li>Enter the secret PIN: <strong>${secretPin}</strong></li>
+                        <li>Type your new 5-letter word and submit.</li>
+                        <li>A new shareable link will be copied to your clipboard.</li>
+                        <li>Send this link to a friend to have them guess your word!</li>
+                    </ol>
+                `;
+                showModal("How to Play", content, '');
+            }
+            
+            function showAboutModal() {
+                const content = `
+                    <p>This is a fun project inspired by the game <strong>Wordle</strong>.</p>
+                    <p>It was created with the help of AI tools like <strong>Google Gemini</strong> to explore web development and game logic.</p>
+                    <p>This game is not for commercial use.</p>
+                `;
+                showModal("About This Project", content, '');
+            }
+
+            async function showSettingsModal() {
+                const pinAttempt = await showModalWithInput({
+                    title: 'Enter Secret PIN',
+                    inputType: 'password',
+                    maxLength: 4,
+                    placeholder: '****'
+                });
+
+                if (pinAttempt === secretPin) {
+                    const newWordAttempt = await showModalWithInput({
+                        title: 'Enter a new 5-letter word',
+                        inputType: 'text',
+                        maxLength: 5,
+                        placeholder: 'APPLE'
+                    });
+
+                    if (newWordAttempt && newWordAttempt.length === 5) {
+                        const newWord = newWordAttempt.toUpperCase();
+                        const encodedWord = btoa(newWord); // Encode the word
+                        const newUrl = `${window.location.origin}${window.location.pathname}?word=${encodedWord}`;
+                        
+                        copyToClipboard(newUrl);
+                        showMessage("New link copied to clipboard!", 2500);
+                        
+                        // Set this new word for the current player too
+                        targetWord = newWord;
+                        resetGame();
+                        
+                    } else if (newWordAttempt !== null) {
+                        showMessage("Invalid word. Must be 5 letters.", 2000);
+                    }
+                } else if (pinAttempt !== null) {
+                    showMessage("Incorrect PIN.", 2000);
+                }
+            }
+            
+            function showWinModal(guesses) {
+                const guessCount = currentRow; // currentRow is 1-based after win
+                const emojiGrid = generateEmojiGrid(guesses);
+                const shareText = `I found the word ${targetWord} in ${guessCount}/${guessRows} guesses!\n\n${emojiGrid}`;
+
+                const content = `
+                    <p>You found the word <strong>${targetWord}</strong> in ${guessCount} ${guessCount > 1 ? "guesses" : "guess"}!</p>
+                    <div id="win-grid-share">${emojiGrid}</div>
+                `;
+                const buttons = `
+                    <button id="clipboard-btn">Share Results</button>
+                `;
+                showModal("You Won!", content, buttons);
+                
+                document.getElementById('clipboard-btn').addEventListener('click', () => {
+                    copyToClipboard(shareText);
+                    showMessage("Copied to clipboard!", 2000);
+                });
+            }
+
+            // --- 5. GAME LOGIC ---
+
+            function handleInteraction(key) {
+                if (isGameOver || modalState.isOpen) return;
+                
+                const upperKey = key.toUpperCase();
+                
+                if (upperKey === 'ENTER') {
+                    submitGuess();
+                } else if (upperKey === 'BACKSPACE' || upperKey === '⌫') {
+                    deleteLetter();
+                } else if (upperKey.length === 1 && upperKey >= 'A' && upperKey <= 'Z') {
+                    addLetter(upperKey);
+                }
+            }
 
             const addLetter = (letter) => {
                 if (currentTile < wordLength && currentRow < guessRows) {
@@ -738,77 +873,119 @@
                     return;
                 }
                 
-                const guess = grid[currentRow].map(tile => tile.textContent).join('').toUpperCase();
-                flipRow(guess);
+                const guess = grid[currentRow].map(tile => tile.textContent).join('');
+                
+                // TODO: Add dictionary check here if desired
+                // if (!isValidWord(guess)) {
+                //     shakeRow();
+                //     showMessage("Not in word list");
+                //     return;
+                // }
+                
+                revealGuess(guess);
             };
-
+            
             const shakeRow = () => {
-                // This function now shakes the current *row* (guess)
-                const guessTiles = grid[currentRow];
-                guessTiles.forEach(tile => tile.classList.add('shake'));
+                const rowTiles = grid[currentRow];
+                rowTiles.forEach(tile => tile.classList.add('shake'));
                 setTimeout(() => {
-                    guessTiles.forEach(tile => tile.classList.remove('shake'));
+                    rowTiles.forEach(tile => tile.classList.remove('shake'));
                 }, 500);
             };
 
-            const flipRow = (guess) => {
-                const guessTiles = grid[currentRow]; // This is the row of 5 tiles
-                let checkTargetWord = targetWord; // Both are uppercase
+            const revealGuess = (guess) => {
+                const tiles = grid[currentRow];
+                const [states, newKeyboardState] = checkGuess(guess, targetWord);
                 
-                // First pass for 'correct'
-                guessTiles.forEach((tile, index) => { // index is 0 to 4 (letter index)
-                    if (guess[index] === targetWord[index]) {
-                        tile.dataset.state = 'correct';
-                        // Mark letter as used
-                        checkTargetWord = checkTargetWord.substring(0, index) + ' ' + checkTargetWord.substring(index + 1);
-                    }
-                });
+                // Update keyboard state object
+                Object.assign(keyboardState, newKeyboardState);
 
-                // Second pass for 'present' and 'absent'
-                guessTiles.forEach((tile, index) => {
-                    if (tile.dataset.state === 'correct') return; // Already processed
-                    
-                    if (checkTargetWord.includes(guess[index])) {
-                        tile.dataset.state = 'present';
-                        // Mark letter as used
-                        checkTargetWord = checkTargetWord.replace(guess[index], ' ');
-                    } else {
-                        tile.dataset.state = 'absent';
-                    }
-                });
-                
-                // Animate the flip and color update
-                // This will flip them one after the other, from left to right
-                guessTiles.forEach((tile, index) => {
+                tiles.forEach((tile, index) => {
                     setTimeout(() => {
-                        tile.classList.add('reveal'); // CHANGED: 'flip' to 'reveal'
-                        tile.classList.add(tile.dataset.state);
-                        updateKeyColor(tile.textContent, tile.dataset.state);
-                    }, index * 250); // Speed up reveal stagger
+                        tile.classList.add('reveal'); // Use new reveal animation
+                        tile.classList.add(states[index]);
+                        updateKeyColor(tile.textContent, states[index]);
+                    }, index * 200); // Faster reveal
                 });
 
-                setTimeout(() => checkWinLoss(guess), wordLength * 250 + 250); // Adjust timeout
+                // Wait for animation to finish before checking win/loss
+                setTimeout(() => {
+                    checkWinLoss(guess);
+                }, wordLength * 200 + 100);
             };
+            
+            function checkGuess(guess, target) {
+                let tileStates = new Array(wordLength).fill('absent');
+                let keyStates = {};
+                let targetLetters = target.split('');
 
-            const updateKeyColor = (letter, state) => {
+                // 1st pass: Check for 'correct' (green)
+                for (let i = 0; i < wordLength; i++) {
+                    if (guess[i] === target[i]) {
+                        tileStates[i] = 'correct';
+                        keyStates[guess[i]] = 'correct';
+                        targetLetters[i] = null; // Mark as used
+                    }
+                }
+
+                // 2nd pass: Check for 'present' (yellow)
+                for (let i = 0; i < wordLength; i++) {
+                    if (tileStates[i] === 'correct') continue; // Already handled
+
+                    if (targetLetters.includes(guess[i])) {
+                        tileStates[i] = 'present';
+                        
+                        // Only update key if not already correct
+                        if (keyStates[guess[i]] !== 'correct') {
+                            keyStates[guess[i]] = 'present';
+                        }
+                        
+                        // Mark as used
+                        targetLetters[targetLetters.indexOf(guess[i])] = null;
+                    }
+                }
+                
+                // 3rd pass: 'absent' (grey)
+                for (let i = 0; i < wordLength; i++) {
+                    if (tileStates[i] !== 'correct' && tileStates[i] !== 'present') {
+                        // Only update key if not already correct or present
+                        if (!keyStates[guess[i]]) {
+                             keyStates[guess[i]] = 'absent';
+                        }
+                    }
+                }
+                
+                return [tileStates, keyStates];
+            }
+
+
+            const updateKeyColor = (letter, state, force = false) => {
                 const key = keyboardContainer.querySelector(`[data-key="${letter.toUpperCase()}"]`);
                 if (!key) return;
 
-                const currentStatus = key.dataset.state;
-                // Don't downgrade a key's color
-                if (currentStatus === 'correct') return;
-                if (currentStatus === 'present' && state === 'absent') return;
+                if (!force) {
+                    const currentStatus = keyboardState[letter];
+                    // Don't downgrade from correct, or from present (unless new is correct)
+                    if (currentStatus === 'correct' || (currentStatus === 'present' && state !== 'correct')) {
+                        return;
+                    }
+                }
                 
-                // Remove old state class if any, before adding new one
+                // Remove all state classes before adding the new one
                 key.classList.remove('correct', 'present', 'absent');
                 key.classList.add(state);
-                key.dataset.state = state;
             };
 
             const checkWinLoss = (guess) => {
+                const allGuesses = grid.slice(0, currentRow + 1).map(row => 
+                    row.map(tile => tile.textContent).join('')
+                );
+                
                 if (guess === targetWord) {
-                    showMessage('You win! 🎉', 5000);
                     isGameOver = true;
+                    currentRow++; // Increment to show correct count
+                    saveGameState(allGuesses);
+                    setTimeout(() => showWinModal(allGuesses), 500);
                     return;
                 }
 
@@ -816,14 +993,84 @@
                 currentTile = 0;
                 
                 if (currentRow >= guessRows) {
-                    showMessage(`Game Over! The word was ${targetWord}`, 5000);
                     isGameOver = true;
+                    showMessage(`Game Over! The word was ${targetWord}`, 5000);
+                    saveGameState(allGuesses);
+                } else {
+                    // Only save if game is not over
+                    saveGameState(allGuesses);
                 }
             };
+            
+            function resetGame() {
+                // Reset state variables
+                currentRow = 0;
+                currentTile = 0;
+                isGameOver = false;
+                keyboardState = {};
+                
+                // Clear saved data for this word
+                localStorage.removeItem(saveKey);
+                
+                // Re-build UI
+                buildGrid();
+                buildKeyboard();
+            }
+            
+            // --- 6. UTILITY FUNCTIONS ---
+
+            function generateEmojiGrid(guesses) {
+                const emojiMap = { 'correct': '🟩', 'present': '🟨', 'absent': '⬛' };
+                let gridString = '';
+
+                for (let i = 0; i < currentRow; i++) {
+                    const guess = guesses[i] || '';
+                    const [states] = checkGuess(guess, targetWord);
+                    gridString += states.map(state => emojiMap[state] || '⬛').join('');
+                    if (i < currentRow - 1) {
+                        gridString += '\n';
+                    }
+                }
+                return gridString;
+            }
+
+            function copyToClipboard(text) {
+                // Use new clipboard API if available
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).catch(err => {
+                        console.warn("Clipboard API failed, falling back...", err);
+                        fallbackCopyTextToClipboard(text);
+                    });
+                } else {
+                    // Fallback for http or older browsers
+                    fallbackCopyTextToClipboard(text);
+                }
+            }
+
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                
+                // Avoid scrolling to bottom
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+
+                document.body.removeChild(textArea);
+            }
 
             // --- START GAME ---
-            buildGrid();
-            buildKeyboard();
+            initGame();
         });
     </script>
 </body>
